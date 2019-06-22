@@ -1,11 +1,11 @@
 let startTime, stopTime
 
 function startTimer() {
-  startTime = new Date().getTime()
+  startTime = performance.now()
 }
 
 function stopTimer() {
-  stopTime = new Date().getTime()
+  stopTime = performance.now()
 }
 
 function postResult() {

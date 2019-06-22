@@ -1,4 +1,8 @@
-import React, { useEffect, useState } from "react"
+import React, {
+  unstable_Profiler as Profiler,
+  useEffect,
+  useState
+} from "react"
 import "./App.css"
 
 const alphabet = Array.from("abcdefghijklmnopqrstuvwxyz").reduce(
@@ -10,30 +14,67 @@ worker.onmessage = ({ data }) => {
   console.log(`Time delay was: ${data}`)
 }
 
+const perfCallback = (
+  id,
+  phase,
+  actualDuration,
+  baseDuration,
+  startTime,
+  commitTime,
+  interactions
+) => {
+  // console.log({ actualDuration, baseDuration, interactions })
+}
+
 function App() {
   const [state, setState] = useState({ itMatters: false, ...alphabet })
   return (
     <div className="App">
       <header className="App-header">Unnecessary re-renders</header>
-      <Form state={state} setState={setState} />
+      <Profiler id="Form" onRender={perfCallback}>
+        <Form state={state} setState={setState} />
+      </Profiler>
     </div>
   )
 }
 
-function Form({ state, setState }) {
+const useToggle = state =>
   useEffect(() => {
     setTimeout(() => {
       worker.postMessage("start")
       document.getElementById(`toggle${+state.itMatters}`).click()
-    }, 50)
+    }, 200)
   }, [state])
+
+const useTyping = (_, setState) =>
+  useEffect(() => {
+    const inputs = document.getElementsByClassName("input-letter")
+    Array.from(inputs).forEach((el, idx) => {
+      const delay = (1 + idx) * 50
+      setInterval(() => {
+        const l = el.id
+        setState(_state => ({
+          ..._state,
+          [l]:
+            _state[l].length < 12
+              ? _state[l] + _state[l].slice(0, 1)
+              : _state[l].slice(0, 1)
+        }))
+        // el.value = n
+        // el.dispatchEvent(new Event("change", { bubbles: true }))
+      }, delay)
+    })
+  }, [])
+
+function Form({ state, setState }) {
+  useToggle(state)
+  useTyping(state, setState)
   const { itMatters } = state
   const toggle = () => {
     setState({ ...state, itMatters: !itMatters })
     worker.postMessage("stop")
   }
-  const changeLetter = l => ({ target: value }) =>
-    setState({ ...state, [l]: value })
+  const changeLetter = l => e => setState({ ...state, [l]: e.target.value })
   return (
     <form name="f">
       <h2>Does unnecessary re-rendering matter?</h2>
@@ -60,7 +101,12 @@ function Form({ state, setState }) {
       {Object.keys(alphabet).map((l, i) => (
         <div key={l}>
           {`Letter ${i + 1}: `}
-          <input value={state[l]} onChange={changeLetter(l)} />
+          <input
+            id={l}
+            className="input-letter"
+            value={state[l]}
+            onChange={changeLetter(l)}
+          />
         </div>
       ))}
     </form>
