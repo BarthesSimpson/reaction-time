@@ -1,0 +1,2 @@
+(this.webpackJsonp=this.webpackJsonp||[]).push([[3],{19:function(s,a){var e,n;self.onmessage=function(s){var a=s.data;"start"!==a?"stop"==a&&(n=performance.now(),postMessage(parseInt(n,10)-parseInt(e,10))):e=performance.now()}}},[[19,0]]]);
+//# sourceMappingURL=reactionTime.00d625cc5b16b50e9ff0.js.map

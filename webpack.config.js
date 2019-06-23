@@ -1,7 +1,7 @@
 const path = require("path")
 const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
   .BundleAnalyzerPlugin
-const CleanWebpackPlugin = require("clean-webpack-plugin")
+const { CleanWebpackPlugin } = require("clean-webpack-plugin")
 const CopyWebpackPlugin = require("copy-webpack-plugin")
 const HtmlWebpackPlugin = require("html-webpack-plugin")
 const WorkerPlugin = require("worker-plugin")
@@ -20,7 +20,7 @@ const plugins = [
   new WorkerPlugin()
 ]
 
-if (!IS_DEV) plugins.push(new CleanWebpackPlugin(["dist"]))
+if (!IS_DEV) plugins.push(new CleanWebpackPlugin())
 
 if (ANALYZE_BUNDLE)
   plugins.push(new BundleAnalyzerPlugin({ generateStatsFile: true }))
@@ -28,7 +28,6 @@ if (ANALYZE_BUNDLE)
 module.exports = {
   entry: {
     main: path.join(__dirname, "src", "index.js"),
-    reactionTime: path.join(__dirname, "src", "reactionTime.worker.js")
   },
   output: {
     path: path.resolve(__dirname, "dist"),
@@ -93,7 +92,7 @@ module.exports = {
     extensions: [".json", ".js", ".jsx"],
     mainFiles: ["index"]
   },
-  devtool: IS_DEV ? "cheap-module-eval-source-map" : "source-map",
+  devtool: IS_DEV ? "eval-source-map" : "source-map",
   devServer: {
     historyApiFallback: true,
     port: 3000,
