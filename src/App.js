@@ -1,6 +1,8 @@
 import React, {
   unstable_Profiler as Profiler,
+  useCallback,
   useEffect,
+  memo,
   useState
 } from "react"
 import "./App.css"
@@ -10,17 +12,26 @@ import {
   unstable_wrap as wrap
 } from "scheduler/tracing"
 
-function Happy() {
-  return "ᕕ( ᐛ )ᕗ"
+const TIMER_WINDOW = 20000
+const MAX_LENGTH = 20
+const TYPING_DELAY = 20
+
+function Icon({ i, sep = " ", char, reverse = false }) {
+  const padding = Array(i).fill(<span>&nbsp;</span>)
+  return reverse ? [char, ...padding] : [...padding, char]
 }
-function Neutral() {
-  return "¯_(ツ)_/¯"
+
+function Happy({ i }) {
+  return <Icon i={i} char="ᕕ( ᐛ )ᕗ" />
 }
-function Sad() {
-  return "¯_(☯෴☯)_/¯"
+function Neutral({ i }) {
+  return <Icon i={i} reverse={true} char="¯_(ツ)_/¯" />
 }
-function Dead() {
-  return "(✖╭╮✖)"
+function Sad({ i }) {
+  return <Icon i={i} char="¯_(☯෴☯)_/¯" />
+}
+function Dead({ i }) {
+  return <Icon i={i} reverse={true} char="(✖╭╮✖)" />
 }
 
 function LetterInput({ l, i, value, onChange }) {
@@ -36,30 +47,33 @@ function LetterInput({ l, i, value, onChange }) {
         onChange={onChange}
       />
       <span style={{ float: "right", width: "50%" }}>
-        {len < 5 ? (
-          <Happy />
-        ) : len < 10 ? (
-          <Neutral />
-        ) : len < 15 ? (
-          <Sad />
+        {len < MAX_LENGTH / 4 ? (
+          <Happy i={len} />
+        ) : len < MAX_LENGTH / 2 ? (
+          <Neutral i={len} />
+        ) : len < (3 * MAX_LENGTH) / 4 ? (
+          <Sad i={len} />
         ) : (
-          <Dead />
+          <Dead i={len} />
         )}
       </span>
     </div>
   )
 }
 
+const MLetterInput = memo(
+  LetterInput,
+  ({ value: _old }, { value: _new }) => _old === _new
+)
+
 const alphabet = Array.from("abcdefghijklmnopqrstuvwxyz").reduce(
   (l, r) => ({ ...l, [r]: r }),
   {}
 )
-const worker = new Worker("reactionTime.worker.js", { type: "module" })
-worker.onmessage = ({ data }) => {
-  // console.log(`Time delay was: ${data}`)
-}
-
-const TIMER_WINDOW = 10000
+// const worker = new Worker("reactionTime.worker.js", { type: "module" })
+// worker.onmessage = ({ data }) => {
+//   console.log(`Time delay was: ${data}`)
+// }
 
 let isStopped = false
 setTimeout(() => {
@@ -98,10 +112,10 @@ const useToggle = state =>
         // `toggle${performance.now()}`,
         // performance.now(),
         () => {
-          worker.postMessage("start")
+          // worker.postMessage("start")
           document.getElementById(`toggle${+state.itMatters}`).click()
         },
-        200
+        300
         // )
       )
     }
@@ -111,14 +125,14 @@ const useTyping = (_, setState) =>
   useEffect(() => {
     const inputs = document.getElementsByClassName("input-letter")
     Array.from(inputs).forEach((el, idx) => {
-      const delay = (1 + idx) * 50
+      const delay = (1 + idx) * TYPING_DELAY
       const isTyping = setInterval(() => {
         const l = el.id
         // trace(`${l}${performance.now()}`, performance.now(), () => {
         setState(_state => ({
           ..._state,
           [l]:
-            _state[l].length < 12
+            _state[l].length < MAX_LENGTH
               ? _state[l] + _state[l].slice(0, 1)
               : _state[l].slice(0, 1)
         }))
@@ -138,9 +152,11 @@ function Form({ state, setState }) {
   const { itMatters } = state
   const toggle = () => {
     setState({ ...state, itMatters: !itMatters })
-    worker.postMessage("stop")
+    // worker.postMessage("stop")
   }
-  const changeLetter = l => e => setState({ ...state, [l]: e.target.value })
+  const changeLetter = l =>
+    useCallback(e => setState({ ...state, [l]: e.target.value }))
+  // const changeLetter = l => e => setState({ ...state, [l]: e.target.value })
   return (
     <form name="f">
       <h2>Does unnecessary re-rendering matter?</h2>
@@ -165,7 +181,8 @@ function Form({ state, setState }) {
         Of course!
       </div>
       {Object.keys(alphabet).map((l, i) => (
-        <LetterInput
+        <MLetterInput
+          // <LetterInput
           key={l}
           l={l}
           i={i}
